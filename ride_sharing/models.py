@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict, Tuple, Optional
 from random import Random
 import math
 import logging
@@ -14,6 +14,8 @@ class Location(object):
 	A simple way to fulfill this requirement is by generating 2D coordinates
 	for locations and using euclidean distance as the distance metric.
 	"""
+	__slots__ = ('x', 'y')
+
 	def __init__(self, x, y):
 		self.x = x
 		self.y = y
@@ -89,6 +91,7 @@ class DriverAnnouncement(Announcement):
 
 class Problem(object):
 	random = None  # type: Random
+	logger = None  # type: logging.Logger
 	model = None  # type: Model
 	locations = None  # type: List[Location]
 	rider_announcements = None  # type: List[RiderAnnouncement]
@@ -103,6 +106,7 @@ class Problem(object):
 	def _gen_locations(self):
 		# Generate a list of random locations to use as the set P
 		self.locations = []
+		self.logger.info("Location generation complete")
 
 	def _gen_announcements(self):
 		"""
@@ -110,10 +114,12 @@ class Problem(object):
 		"""
 		self.rider_announcements = []
 		self.driver_announcmenets = []
+		self.logger.info("Announcement generation complete")
 
 	def _gen_matches(self):
 		# Calculates the cost of each valid match between a rider and a driver
 		self.matches = {}
+		self.logger.info("Match generation complete")
 
 
 	def _build_gurobi_model(self):
@@ -121,10 +127,10 @@ class Problem(object):
 		Generate the Gurobi model using the already generated locations, 
 		announcements, feasible matches, etc.
 		"""
-		pass
+		self.logger.info("Gurobi model built")
 
 	def callback(self, model, where):
-		pass
+		self.logger.debug("Entering callback")
 
 	def build_model(self):
 		self._gen_locations()
