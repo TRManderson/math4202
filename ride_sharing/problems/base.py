@@ -70,12 +70,42 @@ class Problem(object):
                         arrive=end_time
                     ))
                     break
+        depart_fn = lambda d: d.depart
+        self.rider_announcements.sort(key=depart_fn)
+        self.driver_announcements.sort(key=depart_fn)
 
 
     def _gen_matches(self):
         # Calculates the cost of each valid match between a rider and a driver
         self.logger.info("Generating valid pairings")
         self.matches = {}
+        for rider in self.rider_announcements:
+            for driver in self.driver_announcements:
+                if rider.depart > driver.arrive:
+                    continue
+                if driver.depart > rider.arrive:
+                    # drivers are sorted by departure time
+                    # all future drivers have > depart
+                    break
+                pickup = self.distance_between(driver.origin, rider.origin)
+                dropoff = self.distance_between(rider.dest, driver.dest)
+                d_trip = self.distance_between(driver.origin, driver.dest)
+                if pickup + dropoff > d_trip:
+                    # if the driver doubles their trip or worse, it's not worth it
+                    continue
+                r_trip = self.distance_between(rider.origin, rider.dest)
+                
+                # check timings
+                max_rider_dropoff = driver.arrive - dropoff*self.MIN_PER_KM
+                min_rider_pickup = driver.depart + pickup*self.MIN_PER_KM
+                overlap = min(rider.arrive, max_rider_dropoff)-max(min_rider_pickup, rider.depart)
+                if r_trip*self.MIN_PER_KM > overlap:
+                    # if the rider takes longer on their trip than the overlap
+                    # between the driver possible pickup time and the rider
+                    # allowed times, this is not a valid match
+                    continue
+
+                self.matches[(rider, driver)] = pickup + dropoff + trip
         
 
     def _build_gurobi_model(self):
