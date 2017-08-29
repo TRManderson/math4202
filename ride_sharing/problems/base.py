@@ -62,7 +62,7 @@ class Problem(object):
             while True:
                 start_time = self.random.uniform(0, self.MAX_TIME)
                 end_time = start_time + dist*self.MIN_PER_KM + self.FLEXIBILITY
-                if end_time < MAX_TIME:
+                if end_time < self.MAX_TIME:
                     ls.append(cls(
                         origin=start_loc,
                         dest=end_loc,
