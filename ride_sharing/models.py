@@ -29,6 +29,9 @@ class Location(object):
     def __repr__(self):
         return "Location<x={}, y={}>".format(*self.to_tuple())
 
+    def __hash__(self):
+        return hash(self.to_tuple())
+
 
 def Announcement(object):
     """
@@ -58,24 +61,28 @@ def Announcement(object):
         self.depart = depart
         self.arrive = arrive
 
+    @property
+    def rider_driver_str(self):
+        if self.rider:
+            return "Rider"
+        elif self.driver:
+            return "Driver"
+        return ""
+
     def to_tuple(self):
-        return (self.origin, self.dest, self.depart, self.arrive)
+        return (self.origin, self.dest, self.depart, self.arrive, self.rider_driver_str)
 
     def __hash__(self):
         return hash(self.to_tuple())
 
     def __eq__(self, other):
-        return self.to_tuple() == other.to_tuple() 
-            and self.rider == other.rider
-            and self.driver == other.driver
+        return self.to_tuple() == other.to_tuple()
 
     def __repr__(self):
-        rider_driver = ""
-        if self.rider:
-            rider_driver = "Rider"
-        elif self.driver:
-            rider_driver = "Driver"
-        return "{}Announcement<{} -> {}, depart={} arrive={}>".format(rider_driver, *self.to_tuple())
+        return "{}Announcement<{} -> {}, depart={} arrive={}>".format(
+            self.rider_driver_str,
+            *self.to_tuple()[:-1]
+        )
 
 
 class RiderAnnouncement(Announcement):
