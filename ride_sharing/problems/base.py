@@ -56,40 +56,14 @@ class ProblemBase(Generic[ArcType]):
         self.constraints = {}
         self.variables = {}
 
-        riders = collections.defaultdict(list)
-        drivers = collections.defaultdict(list)
-        objective = 0
-
-        for arc, val in self.matches.items():
-            rider, driver = arc
-            var = self.variables[arc] = self.model.addVar(vtype=GRB.BINARY)
-            objective += var * val
-            riders[rider].append(var)
-            drivers[driver].append(var)
-
-        self.model.setObjective(objective, sense=GRB.MAXIMIZE)
-
-        r_const = self.constraints['rider'] = {}
-        for rider, vars in riders.items():
-            r_const[rider] = self.model.addConstr(
-                quicksum(vars) <= 1
-            )
-
-        d_const = self.constraints['driver'] = {}
-        for driver, vars in drivers.items():
-            d_const[driver] = self.model.addConstr(
-                quicksum(vars) <= 1
-            )
-
-
     def callback(self, model, where):
         self.logger.getChild('callback').debug("Entering callback")
 
     def build_model(self) -> None:
         self._gen_locations()
-        self.logger.debug("Generated {} locations".format(len(self.locations)))
         self._gen_announcements()
         self._gen_matches()
+        self.logger.info("Generated {} arcs".format(len(self.matches)))
         self._build_gurobi_model()
 
     def optimize(self):
@@ -179,3 +153,46 @@ class Problem(ProblemBase):
                     continue
 
                 self.matches[(rider, driver)] = d_trip - (pickup + dropoff)
+
+    def _build_gurobi_model(self):
+        super()._build_gurobi_model()
+        riders = collections.defaultdict(list)
+        drivers = collections.defaultdict(list)
+        objective = 0
+
+        for arc, val in self.matches.items():
+            rider, driver = arc
+            var = self.variables[arc] = self.model.addVar(vtype=GRB.BINARY)
+            objective += var * val
+            riders[rider].append(var)
+            drivers[driver].append(var)
+
+        self.model.setObjective(objective, sense=GRB.MAXIMIZE)
+
+        r_const = self.constraints['rider'] = {}
+        for rider, vars in riders.items():
+            r_const[rider] = self.model.addConstr(
+                quicksum(vars) <= 1
+            )
+
+        d_const = self.constraints['driver'] = {}
+        for driver, vars in drivers.items():
+            d_const[driver] = self.model.addConstr(
+                quicksum(vars) <= 1
+            )
+
+    def solution_summary(self):
+        rider_total = len(self.rider_announcements)
+        rider_participated = 0
+        for rider, constr in self.constraints['rider'].items():
+            if constr.Slack == 0:
+                rider_participated += 1
+        self.logger.info("Rider participation: {}/{}\t{}%".format(rider_participated, rider_total, round(rider_participated*100.0/rider_total, 2)))
+
+
+        driver_total = len(self.driver_announcements)
+        driver_participated = 0
+        for driver, constr in self.constraints['driver'].items():
+            if constr.Slack == 0:
+                driver_participated += 1
+        self.logger.info("Driver participation: {}/{}\t{}%".format(driver_participated, driver_total, round(driver_participated*100.0/driver_total, 2)))

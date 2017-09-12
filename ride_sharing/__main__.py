@@ -6,9 +6,10 @@ def main(argv):
     p = Problem(r)
     p.build_model()
     p.optimize()
+    p.solution_summary()
 
 if __name__ == "__main__":
     import sys
     import logging
-    logging.basicConfig(level="DEBUG")
+    logging.basicConfig(level="INFO")
     main(sys.argv)
