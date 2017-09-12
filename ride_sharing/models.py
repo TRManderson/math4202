@@ -33,7 +33,7 @@ class Location(object):
         return hash(self.to_tuple())
 
 
-def Announcement(object):
+class Announcement(object):
     """
     Announcements include an origin and departure location, an earliest departure
     time, a latest arrival time, and an announcement time.
@@ -47,7 +47,7 @@ def Announcement(object):
     l(s) = latest arrival
     f(s) = time_flexibility
     """
-    __slots__ = ('origin', 'dest', 'depart', 'arrive')
+    # __slots__ = ('origin', 'dest', 'depart', 'arrive')
     origin = None  # type: Location
     dest = None  # type: Location
     depart = None  # type: Time
@@ -70,7 +70,7 @@ def Announcement(object):
         return ""
 
     def to_tuple(self):
-        return (self.origin, self.dest, self.depart, self.arrive, self.rider_driver_str)
+        return self.origin, self.dest, self.depart, self.arrive, self.rider_driver_str
 
     def __hash__(self):
         return hash(self.to_tuple())
@@ -89,9 +89,11 @@ class RiderAnnouncement(Announcement):
     rider = True
     driver = False
 
+
 class DriverAnnouncement(Announcement):
     rider = False
     driver = True
+
 
 __all__ = [
     'Location',
