@@ -2,11 +2,7 @@ from ..models import *
 from gurobipy import Model, quicksum, GRB, Constr, Var
 from typing import Dict, Optional, Tuple, TypeVar, Type, Generic
 from random import Random
-try:
-    from tqdm import tqdm
-except ImportError:
-    def tqdm(iterable, *args, **kwargs):
-        return iterable
+from tqdm import tqdm
 import logging
 import collections
 
@@ -76,10 +72,10 @@ class ProblemBase(Generic[ArcType]):
 
 
 class Problem(ProblemBase):
-    LOCATION_COUNT = 200
+    LOCATION_COUNT = 2000
     MIN_XY = 0
-    MAX_XY = 200
-    ANNOUNCEMENT_COUNT = 2000
+    MAX_XY = 100
+    ANNOUNCEMENT_COUNT = 20000
     FLEXIBILITY = 20
     MIN_PER_KM = 1.2
     MAX_TIME = 2000
@@ -126,13 +122,17 @@ class Problem(ProblemBase):
     def _gen_matches(self):
         # Calculates the cost of each valid match between a rider and a driver
         super()._gen_matches()
+        d_len = len(self.driver_announcements)
+        pbar = tqdm(total=len(self.rider_announcements) * len(self.driver_announcements), desc="arc generation", mininterval=2, leave=False)
         for rider in self.rider_announcements:
-            for driver in self.driver_announcements:
+            for i, driver in enumerate(self.driver_announcements):
+                pbar.update()
                 if rider.depart > driver.arrive:
                     continue
                 if driver.depart > rider.arrive:
                     # drivers are sorted by departure time
                     # all future drivers have > depart
+                    pbar.update(d_len - i - 1)
                     break
                 pickup = self.distance_between(driver.origin, rider.origin)
                 dropoff = self.distance_between(rider.dest, driver.dest)
@@ -146,13 +146,14 @@ class Problem(ProblemBase):
                 max_rider_dropoff = driver.arrive - dropoff*self.MIN_PER_KM
                 min_rider_pickup = driver.depart + pickup*self.MIN_PER_KM
                 overlap = min(rider.arrive, max_rider_dropoff)-max(min_rider_pickup, rider.depart)
-                if r_trip*self.MIN_PER_KM > overlap:
+                if r_trip * self.MIN_PER_KM > overlap:
                     # if the rider takes longer on their trip than the overlap
                     # between the driver possible pickup time and the rider
                     # allowed times, this is not a valid match
                     continue
 
                 self.matches[(rider, driver)] = d_trip - (pickup + dropoff)
+        pbar.close()
 
     def _build_gurobi_model(self):
         super()._build_gurobi_model()
@@ -169,6 +170,9 @@ class Problem(ProblemBase):
 
         self.model.setObjective(objective, sense=GRB.MAXIMIZE)
 
+        self._build_constraints(riders, drivers)
+
+    def _build_constraints(self, riders, drivers):
         r_const = self.constraints['rider'] = {}
         for rider, vars in riders.items():
             r_const[rider] = self.model.addConstr(
@@ -182,12 +186,13 @@ class Problem(ProblemBase):
             )
 
     def solution_summary(self):
+        logger = self.logger.getChild("solution")
         rider_total = len(self.rider_announcements)
         rider_participated = 0
         for rider, constr in self.constraints['rider'].items():
             if constr.Slack == 0:
                 rider_participated += 1
-        self.logger.info("Rider participation: {}/{}\t{}%".format(rider_participated, rider_total, round(rider_participated*100.0/rider_total, 2)))
+        logger.info("Rider participation: {}/{}\t{}%".format(rider_participated, rider_total, round(rider_participated*100.0/rider_total, 2)))
 
 
         driver_total = len(self.driver_announcements)
@@ -195,4 +200,4 @@ class Problem(ProblemBase):
         for driver, constr in self.constraints['driver'].items():
             if constr.Slack == 0:
                 driver_participated += 1
-        self.logger.info("Driver participation: {}/{}\t{}%".format(driver_participated, driver_total, round(driver_participated*100.0/driver_total, 2)))
+        logger.info("Driver participation: {}/{}\t{}%".format(driver_participated, driver_total, round(driver_participated*100.0/driver_total, 2)))
