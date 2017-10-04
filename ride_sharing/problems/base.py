@@ -2,12 +2,16 @@ from ..models import *
 from gurobipy import Model, quicksum, GRB, Constr, Var
 from typing import Dict, Optional, Tuple, TypeVar, Type, Generic
 from random import Random
+import heapq as hq
 try:
     from tqdm import tqdm
 except ImportError:
     def tqdm(iterable, *args, **kwargs):
         return iterable
 import logging
+import itertools
+from ..util import tail
+from operator import itemgetter
 import collections
 
 ArcType = TypeVar('ArcType')
@@ -83,6 +87,7 @@ class Problem(ProblemBase):
     FLEXIBILITY = 20
     MIN_PER_KM = 1.2
     MAX_TIME = 2000
+    EPSILON = 0.001
 
     def _gen_locations(self):
         super()._gen_locations()
@@ -123,9 +128,16 @@ class Problem(ProblemBase):
         self.rider_announcements.sort(key=depart_fn)
         self.driver_announcements.sort(key=depart_fn)
 
+    def _track_savings(self, rider, driver, savings):
+        self.matches[(rider, driver)] = savings
+        hq.heappush(self.rider_preferences[rider], (-savings, driver))
+        hq.heappush(self.driver_preferences[driver], (-savings, rider))
+
     def _gen_matches(self):
         # Calculates the cost of each valid match between a rider and a driver
         super()._gen_matches()
+        self.driver_preferences = collections.defaultdict(list)
+        self.rider_preferences = collections.defaultdict(list)
         for rider in self.rider_announcements:
             for driver in self.driver_announcements:
                 if rider.depart > driver.arrive:
@@ -152,7 +164,7 @@ class Problem(ProblemBase):
                     # allowed times, this is not a valid match
                     continue
 
-                self.matches[(rider, driver)] = d_trip - (pickup + dropoff)
+                self._track_savings(rider, driver, d_trip - (pickup + dropoff))
 
     def _build_gurobi_model(self):
         super()._build_gurobi_model()
@@ -196,3 +208,16 @@ class Problem(ProblemBase):
             if constr.Slack == 0:
                 driver_participated += 1
         self.logger.info("Driver participation: {}/{}\t{}%".format(driver_participated, driver_total, round(driver_participated*100.0/driver_total, 2)))
+
+    def _stability_constraint_for(self, rider, driver, var):
+        rider_pref = quicksum(
+            self.variables[(rider, driver_preferred)]
+            for driver_preferred in
+            tail(itertools.dropwhile(driver.__ne__, map(itemgetter(1), self.rider_preferences[rider])))
+        )
+        driver_pref = quicksum(
+            self.variables[(rider_preferred, driver)]
+            for rider_preferred in
+            tail(itertools.dropwhile(driver.__ne__, map(itemgetter(1), self.driver_preferences[rider])))
+        )
+        return rider_pref + driver_pref + var >= 1

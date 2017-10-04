@@ -1,9 +1,10 @@
-from ride_sharing.problems.base import Problem
+from ride_sharing.problems.lazy_stability import LazyStabilityProblem
+from ride_sharing.problems.simple_stability import SimpleStabilityProblem
 from random import Random
 
 def main(argv):
     r = Random(3)
-    p = Problem(r)
+    p = SimpleStabilityProblem(r)
     p.build_model()
     p.optimize()
     p.solution_summary()
