@@ -8,6 +8,7 @@ from operator import itemgetter
 class LazyStabilityProblem(Problem):
     def _build_gurobi_model(self):
         super()._build_gurobi_model()
+        self.model.setParam('LazyConstraints', 1)
 
     def _cb_arcs_solutions(self, model: Model):
         keys = self.variables.keys()

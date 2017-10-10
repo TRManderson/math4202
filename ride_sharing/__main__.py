@@ -12,5 +12,5 @@ def main(argv):
 if __name__ == "__main__":
     import sys
     import logging
-    logging.basicConfig(level="INFO")
+    logging.basicConfig(level="INFO", format="%(asctime)s | %(message)s")
     main(sys.argv)

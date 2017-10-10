@@ -218,6 +218,6 @@ class Problem(ProblemBase):
         driver_pref = quicksum(
             self.variables[(rider_preferred, driver)]
             for rider_preferred in
-            tail(itertools.dropwhile(driver.__ne__, map(itemgetter(1), self.driver_preferences[rider])))
+            tail(itertools.dropwhile(driver.__ne__, map(itemgetter(1), self.driver_preferences[driver])))
         )
         return rider_pref + driver_pref + var >= 1

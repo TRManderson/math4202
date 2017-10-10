@@ -1,8 +1,10 @@
 from typing import List, Optional
 import math
+from functools import total_ordering
 
 Time = float  # type alias
 
+@total_ordering
 class Location(object):
     """
     The distance between any pair of locations must be known, this is the only
@@ -32,7 +34,10 @@ class Location(object):
     def __hash__(self):
         return hash(self.to_tuple())
 
+    def __le__(self, other):
+        return self.to_tuple() <= other.to_tuple()
 
+@total_ordering
 class Announcement(object):
     """
     Announcements include an origin and departure location, an earliest departure
@@ -83,6 +88,9 @@ class Announcement(object):
             self.rider_driver_str,
             *self.to_tuple()[:-1]
         )
+
+    def __le__(self, other):
+        return self.to_tuple() <= other.to_tuple()
 
 
 class RiderAnnouncement(Announcement):
