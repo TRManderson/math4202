@@ -11,7 +11,7 @@ except ImportError:
 import logging
 import itertools
 from ..util import tail
-from operator import itemgetter
+from operator import itemgetter, attrgetter
 import collections
 
 ArcType = TypeVar('ArcType')
@@ -37,14 +37,6 @@ class ProblemBase(Generic[ArcType]):
         # Generate a list of random locations to use as the set P
         self.logger.info("Beginning location generation")
         self.locations = []
-
-    def _gen_announcements(self):
-        """
-        Generate sets of rider and driver announcements
-        """
-        self.logger.info("Generating announcements")
-        self.rider_announcements = []
-        self.driver_announcements = []
 
     def _gen_matches(self):
         # Calculates the cost of each valid match between a rider and a driver
@@ -80,18 +72,19 @@ class ProblemBase(Generic[ArcType]):
 
 
 class Problem(ProblemBase):
-    LOCATION_COUNT = 200
+    LOCATION_COUNT = 500
     MIN_XY = 0
     MAX_XY = 200
-    ANNOUNCEMENT_COUNT = 2000
+    ANNOUNCEMENT_COUNT = 15000
     FLEXIBILITY = 20
     MIN_PER_KM = 1.2
     MAX_TIME = 2000
     EPSILON = 0.001
+    PRECISION = 4
 
     def _gen_locations(self):
         super()._gen_locations()
-        gen = lambda: self.random.uniform(self.MIN_XY, self.MAX_XY)
+        gen = lambda: round(self.random.uniform(self.MIN_XY, self.MAX_XY), self.PRECISION)
         self.locations = [Location(gen(), gen()) for _ in tqdm(range(self.LOCATION_COUNT), "locations", ncols=100)]
         self.distances_cache = {}
 
@@ -102,7 +95,9 @@ class Problem(ProblemBase):
         return self.distances_cache[loc1, loc2]
 
     def _gen_announcements(self):
-        super()._gen_announcements()
+        self.logger.info("Generating announcements")
+        self.rider_announcements = set()
+        self.driver_announcements = set()
         for _ in tqdm(range(self.ANNOUNCEMENT_COUNT), "announcements", ncols=100):
             if self.random.randint(0, 1):
                 ls = self.rider_announcements
@@ -114,17 +109,21 @@ class Problem(ProblemBase):
             end_loc = self.random.choice(self.locations)
             dist = self.distance_between(start_loc, end_loc)
             while True:
-                start_time = self.random.uniform(0, self.MAX_TIME)
+                start_time = round(self.random.uniform(0, self.MAX_TIME), self.PRECISION)
                 end_time = start_time + dist*self.MIN_PER_KM + self.FLEXIBILITY
                 if end_time < self.MAX_TIME:
-                    ls.append(cls(
+                    announcement = cls(
                         origin=start_loc,
                         dest=end_loc,
                         depart=start_time,
                         arrive=end_time
-                    ))
-                    break
-        depart_fn = lambda d: d.depart
+                    )
+                    if announcement not in ls:
+                        ls.add(announcement)
+                        break
+        depart_fn = attrgetter('depart')
+        self.rider_announcements = list(self.rider_announcements)
+        self.driver_announcements = list(self.driver_announcements)
         self.rider_announcements.sort(key=depart_fn)
         self.driver_announcements.sort(key=depart_fn)
 
@@ -209,15 +208,31 @@ class Problem(ProblemBase):
                 driver_participated += 1
         self.logger.info("Driver participation: {}/{}\t{}%".format(driver_participated, driver_total, round(driver_participated*100.0/driver_total, 2)))
 
+    def _stability_filter(self, savings, person, items):
+        i = iter(items)
+        while True:
+            s, p = next(i)
+            if s > savings:
+                continue
+            elif s == savings:
+                if p != person:
+                    yield p
+                    self.logger.debug("Found tie: {} == {}".format(person, p))
+            else:
+                break
+        yield from map(itemgetter(1), i)
+
+
     def _stability_constraint_for(self, rider, driver, var):
+        match_savings = self.matches[(rider, driver)]
         rider_pref = quicksum(
             self.variables[(rider, driver_preferred)]
             for driver_preferred in
-            tail(itertools.dropwhile(driver.__ne__, map(itemgetter(1), self.rider_preferences[rider])))
+            self._stability_filter(match_savings, driver, self.rider_preferences[rider])
         )
         driver_pref = quicksum(
             self.variables[(rider_preferred, driver)]
             for rider_preferred in
-            tail(itertools.dropwhile(driver.__ne__, map(itemgetter(1), self.driver_preferences[driver])))
+            self._stability_filter(match_savings, rider, self.driver_preferences[driver])
         )
         return rider_pref + driver_pref + var >= 1

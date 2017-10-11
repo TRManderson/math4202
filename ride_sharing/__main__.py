@@ -4,7 +4,7 @@ from random import Random
 
 def main(argv):
     r = Random(3)
-    p = SimpleStabilityProblem(r)
+    p = LazyStabilityProblem(r)
     p.build_model()
     p.optimize()
     p.solution_summary()
