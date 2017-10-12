@@ -167,6 +167,7 @@ class Problem(ProblemBase):
         super()._build_gurobi_model()
         riders = collections.defaultdict(list)
         drivers = collections.defaultdict(list)
+        self.constraints['stability'] = {}
         objective = 0
 
         for arc, val in self.matches.items():
@@ -181,16 +182,44 @@ class Problem(ProblemBase):
         r_const = self.constraints['rider'] = {}
         for rider, vars in riders.items():
             r_const[rider] = self.model.addConstr(
-                quicksum(vars) <= 1
+                quicksum(vars) <= 1, name="{} once".format(rider)
             )
 
         d_const = self.constraints['driver'] = {}
         for driver, vars in drivers.items():
             d_const[driver] = self.model.addConstr(
-                quicksum(vars) <= 1
+                quicksum(vars) <= 1, name="{} once".format(driver)
             )
 
     def solution_summary(self):
+        if self.model.Status == GRB.INFEASIBLE:
+            self.model.computeIIS()
+            p = False
+            for rider, constr in self.constraints['rider'].items():
+                if constr.IISConstr:
+                    p = True
+                    self.logger.info('{} participates in IIS'.format(rider))
+            if not p:
+                self.logger.info("No rider constraints participate in IIS")
+
+            p = False
+            for driver, constr in self.constraints['driver'].items():
+                if constr.IISConstr:
+                    p = True
+                    self.logger.info('{} participates in IIS'.format(driver))
+            if not p:
+                self.logger.info("No driver constraints participate in IIS")
+
+            p = False
+            for arc, constr in self.constraints['stability'].items():
+                if constr.IISConstr:
+                    p = True
+                    self.logger.info('{} participates in IIS (cost {})'.format(arc, self.matches[arc]))
+            if not p:
+                self.logger.info("No stability constraints participate in IIS")
+
+            return
+
         rider_total = len(self.rider_announcements)
         rider_participated = 0
         for rider, constr in self.constraints['rider'].items():
@@ -210,7 +239,7 @@ class Problem(ProblemBase):
         i = iter(items)
         while True:
             s, p = next(i)
-            if s > savings:
+            if s < savings:
                 continue
             elif s == savings:
                 if p != person:
