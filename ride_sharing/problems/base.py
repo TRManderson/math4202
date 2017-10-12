@@ -16,6 +16,14 @@ import collections
 
 ArcType = TypeVar('ArcType')
 
+
+def distance_between(loc1, loc2, cache={}):
+    if (loc1, loc2) not in cache:
+        cache[loc1, loc2] = loc1.distance_to(loc2)
+        cache[loc2, loc1] = cache[loc1, loc2]
+    return cache[loc1, loc2]
+
+
 class ProblemBase(Generic[ArcType]):
     random = None  # type: Random
     logger = None  # type: logging.Logger
@@ -37,11 +45,6 @@ class ProblemBase(Generic[ArcType]):
         # Generate a list of random locations to use as the set P
         self.logger.info("Beginning location generation")
         self.locations = []
-
-    def _gen_matches(self):
-        # Calculates the cost of each valid match between a rider and a driver
-        self.logger.info("Generating valid pairings")
-        self.matches = {}
 
     def _build_gurobi_model(self) -> None:
         """
@@ -88,12 +91,6 @@ class Problem(ProblemBase):
         self.locations = [Location(gen(), gen()) for _ in tqdm(range(self.LOCATION_COUNT), "locations", ncols=100)]
         self.distances_cache = {}
 
-    def distance_between(self, loc1, loc2):
-        if (loc1, loc2) not in self.distances_cache:
-            self.distances_cache[loc1, loc2] = loc1.distance_to(loc2)
-            self.distances_cache[loc2, loc1] = self.distances_cache[loc1, loc2]
-        return self.distances_cache[loc1, loc2]
-
     def _gen_announcements(self):
         self.logger.info("Generating announcements")
         self.rider_announcements = set()
@@ -107,7 +104,7 @@ class Problem(ProblemBase):
                 cls = DriverAnnouncement
             start_loc = self.random.choice(self.locations)
             end_loc = self.random.choice(self.locations)
-            dist = self.distance_between(start_loc, end_loc)
+            dist = distance_between(start_loc, end_loc, self.distances_cache)
             while True:
                 start_time = round(self.random.uniform(0, self.MAX_TIME), self.PRECISION)
                 end_time = start_time + dist*self.MIN_PER_KM + self.FLEXIBILITY
@@ -129,12 +126,13 @@ class Problem(ProblemBase):
 
     def _track_savings(self, rider, driver, savings):
         self.matches[(rider, driver)] = savings
-        hq.heappush(self.rider_preferences[rider], (-savings, driver))
-        hq.heappush(self.driver_preferences[driver], (-savings, rider))
+        hq.heappush(self.rider_preferences[rider], (savings, driver))
+        hq.heappush(self.driver_preferences[driver], (savings, rider))
 
     def _gen_matches(self):
         # Calculates the cost of each valid match between a rider and a driver
-        super()._gen_matches()
+        self.logger.info("Generating valid pairings")
+        self.matches = {}
         self.driver_preferences = collections.defaultdict(list)
         self.rider_preferences = collections.defaultdict(list)
         for rider in self.rider_announcements:
@@ -145,13 +143,13 @@ class Problem(ProblemBase):
                     # drivers are sorted by departure time
                     # all future drivers have > depart
                     break
-                pickup = self.distance_between(driver.origin, rider.origin)
-                dropoff = self.distance_between(rider.dest, driver.dest)
-                d_trip = self.distance_between(driver.origin, driver.dest)
+                pickup = distance_between(driver.origin, rider.origin, self.distances_cache)
+                dropoff = distance_between(rider.dest, driver.dest, self.distances_cache)
+                d_trip = distance_between(driver.origin, driver.dest, self.distances_cache)
                 if pickup + dropoff > d_trip:
                     # if the driver doubles their trip or worse, it's not worth it
                     continue
-                r_trip = self.distance_between(rider.origin, rider.dest)
+                r_trip = distance_between(rider.origin, rider.dest, self.distances_cache)
 
                 # check timings
                 max_rider_dropoff = driver.arrive - dropoff*self.MIN_PER_KM

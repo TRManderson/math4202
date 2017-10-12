@@ -1,10 +1,11 @@
 from ride_sharing.problems.lazy_stability import LazyStabilityProblem
 from ride_sharing.problems.simple_stability import SimpleStabilityProblem
+from ride_sharing.problems.parallel_matching import ParallelMatchingProblem
 from random import Random
 
 def main(argv):
     r = Random(3)
-    p = LazyStabilityProblem(r)
+    p = type('BSType', (ParallelMatchingProblem, SimpleStabilityProblem), {})(r)
     p.build_model()
     p.optimize()
     p.solution_summary()
