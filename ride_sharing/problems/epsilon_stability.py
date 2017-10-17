@@ -10,6 +10,4 @@ class EpsilonStableProblem(Problem):
             s, p = next(i)
             if s < savings + self.STABILITY_EPSILON:
                 continue
-            else:
-                break
         yield from map(itemgetter(1), i)

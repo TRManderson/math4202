@@ -11,6 +11,7 @@ except ImportError:
 import logging
 import itertools
 from ..util import tail
+import time
 from operator import itemgetter, attrgetter
 import collections
 
@@ -61,9 +62,14 @@ class ProblemBase(Generic[ArcType]):
     def build_model(self) -> None:
         self._gen_locations()
         self._gen_announcements()
+        t1 = time.time()
         self._gen_matches()
-        self.logger.info("Generated {} arcs".format(len(self.matches)))
+        t2 = time.time()
+        self.logger.info("Generated {} arcs: {}s".format(len(self.matches), t2-t1))
+        t1 = time.time()
         self._build_gurobi_model()
+        t2 = time.time()
+        self.logger.info("Building gurobi model took {}s".format(t2 - t1))
 
     def optimize(self):
         def inner_fn(*args, **kwargs):
@@ -75,10 +81,10 @@ class ProblemBase(Generic[ArcType]):
 
 
 class Problem(ProblemBase):
-    LOCATION_COUNT = 500
+    LOCATION_COUNT = 200
     MIN_XY = 0
     MAX_XY = 200
-    ANNOUNCEMENT_COUNT = 15000
+    ANNOUNCEMENT_COUNT = 2000
     FLEXIBILITY = 20
     MIN_PER_KM = 1.2
     MAX_TIME = 2000
@@ -159,6 +165,8 @@ class Problem(ProblemBase):
                     # if the rider takes longer on their trip than the overlap
                     # between the driver possible pickup time and the rider
                     # allowed times, this is not a valid match
+                    continue
+                if d_trip - (pickup + dropoff) < 0:
                     continue
 
                 self._track_savings(rider, driver, d_trip - (pickup + dropoff))

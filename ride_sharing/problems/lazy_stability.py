@@ -2,10 +2,12 @@ from .base import Problem
 from gurobipy import CallbackClass, Model, quicksum
 import itertools
 from ride_sharing.util import tail
-from operator import itemgetter
+from operator import itemgetter, lt
 
 
 class LazyStabilityProblem(Problem):
+
+
     def _build_gurobi_model(self):
         super()._build_gurobi_model()
         self.model.setParam('LazyConstraints', 1)
