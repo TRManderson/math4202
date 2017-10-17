@@ -12,6 +12,7 @@ def main(argv):
     r = Random(3)
     p = type('BS', (ParallelMatchingProblem, LazyStabilityProblem), {})(r)
     # p.STABILITY_EPSILON = 100
+    p.build_data()
     p.build_model()
     t1 = time.time()
     p.optimize()

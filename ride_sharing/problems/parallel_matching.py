@@ -44,9 +44,6 @@ class ParallelMatchingProblem(Problem):
 
     def _gen_matches(self):
         self.logger.info("Generating valid pairings")
-        self.matches = {}
-        self.driver_preferences = collections.defaultdict(list)
-        self.rider_preferences = collections.defaultdict(list)
         exec = ProcessPoolExecutor()
 
         chunk_size = int(round(len(self.rider_announcements)/(cpu_count()*2)))

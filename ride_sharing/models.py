@@ -1,10 +1,11 @@
 from typing import List, Optional
 import math
-from functools import total_ordering
+import attr
+import pickle
 
 Time = float  # type alias
 
-@total_ordering
+@attr.s(frozen=True)
 class Location(object):
     """
     The distance between any pair of locations must be known, this is the only
@@ -13,31 +14,13 @@ class Location(object):
     A simple way to fulfill this requirement is by generating 2D coordinates
     for locations and using euclidean distance as the distance metric.
     """
-    __slots__ = ('x', 'y')
-
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
+    x = attr.ib()
+    y = attr.ib()
 
     def distance_to(self, other):
         return math.sqrt((self.x - other.x)**2 + (self.y - other.y)**2)
 
-    def to_tuple(self):
-        return (self.x, self.y)
-
-    def __str__(self):
-        return "({}, {})".format(*self.to_tuple())
-
-    def __repr__(self):
-        return "Location<x={}, y={}>".format(*self.to_tuple())
-
-    def __hash__(self):
-        return hash(self.to_tuple())
-
-    def __le__(self, other):
-        return self.to_tuple() <= other.to_tuple()
-
-@total_ordering
+@attr.s(frozen=True)
 class Announcement(object):
     """
     Announcements include an origin and departure location, an earliest departure
@@ -53,44 +36,22 @@ class Announcement(object):
     f(s) = time_flexibility
     """
     # __slots__ = ('origin', 'dest', 'depart', 'arrive')
-    origin = None  # type: Location
-    dest = None  # type: Location
-    depart = None  # type: Time
-    arrive = None  # type: Time
+    origin = attr.ib()  # type: Location
+    dest = attr.ib()  # type: Location
+    depart = attr.ib()  # type: Time
+    arrive = attr.ib()  # type: Time
     rider = None  # type: Optional[bool]
     driver = None  # type: Optional[bool]
+    rider_driver_str = attr.ib(init=False)
 
-    def __init__(self, origin: Location, dest: Location, depart: Time, arrive: Time):
-        self.origin = origin
-        self.dest = dest
-        self.depart = depart
-        self.arrive = arrive
-
-    @property
-    def rider_driver_str(self):
+    def __attrs_post_init__(self):
+        set = lambda v: object.__setattr__(self, 'rider_driver_str', v)
         if self.rider:
-            return "Rider"
+            set("Rider")
         elif self.driver:
-            return "Driver"
-        return ""
-
-    def to_tuple(self):
-        return self.origin, self.dest, self.depart, self.arrive, self.rider_driver_str
-
-    def __hash__(self):
-        return hash(self.to_tuple())
-
-    def __eq__(self, other):
-        return self.to_tuple() == other.to_tuple()
-
-    def __repr__(self):
-        return "{}Announcement<{} -> {}, depart={} arrive={}>".format(
-            self.rider_driver_str,
-            *self.to_tuple()[:-1]
-        )
-
-    def __le__(self, other):
-        return self.to_tuple() <= other.to_tuple()
+            set("Rider")
+        else:
+            set("")
 
 
 class RiderAnnouncement(Announcement):
@@ -103,8 +64,26 @@ class DriverAnnouncement(Announcement):
     driver = True
 
 
+@attr.s(frozen=True)
+class DataSet(object):
+    locations = attr.ib()
+    rider_announcements = attr.ib()
+    driver_announcements = attr.ib()
+    matches = attr.ib()
+    rider_preferences = attr.ib()
+    driver_preferences = attr.ib()
+
+    @classmethod
+    def load_data(cls, f):
+        return cls(**pickle.load(f))
+
+    def save_data(self, f):
+        pickle.dump(attr.asdict(self), f)
+
+
 __all__ = [
     'Location',
     'RiderAnnouncement',
     'DriverAnnouncement',
+    'DataSet'
 ]
