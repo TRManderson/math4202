@@ -5,6 +5,7 @@ import pickle
 
 Time = float  # type alias
 
+
 @attr.s(frozen=True)
 class Location(object):
     """
@@ -19,6 +20,7 @@ class Location(object):
 
     def distance_to(self, other):
         return math.sqrt((self.x - other.x)**2 + (self.y - other.y)**2)
+
 
 @attr.s(frozen=True)
 class Announcement(object):
