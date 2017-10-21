@@ -80,7 +80,7 @@ class DataSet(object):
         return cls(**pickle.load(f))
 
     def save_data(self, f):
-        pickle.dump(attr.asdict(self), f)
+        pickle.dump(attr.asdict(self, recurse=False), f)
 
 
 __all__ = [

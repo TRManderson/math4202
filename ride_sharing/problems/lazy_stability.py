@@ -1,8 +1,5 @@
 from .base import Problem
 from gurobipy import CallbackClass, Model, quicksum
-import itertools
-from ride_sharing.util import tail
-from operator import itemgetter, lt
 
 
 class LazyStabilityProblem(Problem):

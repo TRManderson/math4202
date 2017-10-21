@@ -46,7 +46,7 @@ class ParallelMatchingProblem(Problem):
         self.logger.info("Generating valid pairings")
         exec = ProcessPoolExecutor()
 
-        chunk_size = int(round(len(self.rider_announcements)/(cpu_count()*2)))
+        chunk_size = int(round(len(self.rider_announcements)/(cpu_count()*8.0)))
 
         fn = partial(matches_for_rider, driver_announcements=self.driver_announcements, min_per_km=self.MIN_PER_KM)
 

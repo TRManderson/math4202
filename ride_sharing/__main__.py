@@ -9,16 +9,18 @@ from random import Random
 import time
 
 def main(argv):
-    r = Random(3)
-    p = type('BS', (ParallelMatchingProblem, LazyStabilityProblem), {})(r)
+    seed = 37
+    r = Random(seed)
+    p = ParallelMatchingProblem(r)
     # p.STABILITY_EPSILON = 100
     p.build_data()
-    p.build_model()
-    t1 = time.time()
-    p.optimize()
-    t2 = time.time()
-    p.logger.info("Optimising took {}s".format(t2-t1))
-    p.solution_summary()
+    p.save_data("l{loc}xy{xy}a{a}t{t}s{seed}.pickle".format(
+        loc=p.LOCATION_COUNT,
+        seed=seed,
+        xy=p.MAX_XY,
+        a=p.ANNOUNCEMENT_COUNT,
+        t=p.MAX_TIME,
+    ))
 
 if __name__ == "__main__":
     import sys

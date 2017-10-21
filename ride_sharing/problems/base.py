@@ -9,8 +9,6 @@ except ImportError:
     def tqdm(iterable, *args, **kwargs):
         return iterable
 import logging
-import itertools
-from ..util import tail
 import time
 from operator import itemgetter, attrgetter
 import collections
@@ -24,11 +22,12 @@ def distance_between(loc1, loc2, cache={}):
         cache[loc2, loc1] = cache[loc1, loc2]
     return cache[loc1, loc2]
 
+
 class Problem(Generic[ArcType]):
-    LOCATION_COUNT = 200
+    LOCATION_COUNT = 500
     MIN_XY = 0
-    MAX_XY = 200
-    ANNOUNCEMENT_COUNT = 2000
+    MAX_XY = 1000
+    ANNOUNCEMENT_COUNT = 20000
     FLEXIBILITY = 20
     MIN_PER_KM = 1.2
     MAX_TIME = 2000
@@ -136,7 +135,7 @@ class Problem(Generic[ArcType]):
                 self._track_savings(rider, driver, d_trip - (pickup + dropoff))
 
     def load_data(self, filename):
-        with open(filename, 'r') as f:
+        with open(filename, 'rb') as f:
             ds = DataSet.load_data(f)
         self.locations = ds.locations
         self.rider_announcements = ds.rider_announcements
@@ -154,7 +153,7 @@ class Problem(Generic[ArcType]):
             rider_preferences=self.rider_preferences,
             driver_preferences=self.driver_preferences,
         )
-        with open(filename, 'w+') as f:
+        with open(filename, 'wb+') as f:
             ds.save_data(f)
 
     def _build_gurobi_model(self):
@@ -250,7 +249,6 @@ class Problem(Generic[ArcType]):
             if constr.Slack == 0:
                 rider_participated += 1
         self.logger.info("Rider participation: {}/{}\t{}%".format(rider_participated, rider_total, round(rider_participated*100.0/rider_total, 2)))
-
 
         driver_total = len(self.driver_announcements)
         driver_participated = 0
