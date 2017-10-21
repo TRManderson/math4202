@@ -39,7 +39,8 @@ def test(model, seed, parallel):
     """
     r = Random(seed)
     base_cls = ParallelMatchingProblem if parallel else Problem
-    cls = type('RuntimeClass', tuple(model) + (base_cls,), {})
+    bases = tuple(model_names[name] for name in model) + (base_cls,)
+    cls = type('RuntimeClass', bases, {})
     p = cls(r)
     p.build_data()
     p.build_model()
@@ -70,7 +71,8 @@ def from_data(filename, model):
     """
     Attempt a solve from a file
     """
-    cls = type('RuntimeClass', model, {})
+    bases = tuple(model_names[name] for name in model)
+    cls = type('RuntimeClass', bases, {})
     p = cls()
     p.load_data(filename)
     p.build_model()
