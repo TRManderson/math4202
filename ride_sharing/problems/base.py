@@ -31,7 +31,6 @@ class Problem(Generic[ArcType]):
     FLEXIBILITY = 20
     MIN_PER_KM = 1.2
     MAX_TIME = 2000
-    EPSILON = 0.001
     PRECISION = 4
 
     random = None  # type: Random

@@ -4,6 +4,7 @@ from ride_sharing.problems.simple_stability import SimpleStabilityProblem
 from ride_sharing.problems.parallel_matching import ParallelMatchingProblem
 from ride_sharing.problems.epsilon_stability import EpsilonStableProblem
 from ride_sharing.problems.iterative_removal import IterativeConstraintRemovalProblem
+from ride_sharing.util import compose
 from random import Random
 import os
 import click
@@ -18,6 +19,10 @@ model_names = {
 
 models_option = click.option('--model', '-m', type=click.Choice(list(model_names.keys())), multiple=True, required=True)
 seed_option = click.argument('--seed', type=int, default=os.urandom(4))
+parallel_option = compose(
+    click.option('--parallel', 'parallel', flag_value=True, default=True),
+    click.option('--single-threaded', 'parallel', flag_value=False),
+)
 
 
 @click.group(name='ride_sharing', epilog="Tom Manderson & Iain Rudge")
@@ -29,10 +34,9 @@ def cli():
 
 
 @cli.command()
-@models_option
+@parallel_option
 @seed_option
-@click.option('--parallel', 'parallel', flag_value=True, default=True)
-@click.option('--single-threaded', 'parallel', flag_value=False)
+@models_option
 def test(model, seed, parallel):
     """
     Run the existing test code
@@ -49,8 +53,7 @@ def test(model, seed, parallel):
 
 
 @cli.command()
-@click.option('--parallel', 'parallel', flag_value=True, default=True)
-@click.option('--single-threaded', 'parallel', flag_value=False)
+@parallel_option
 @seed_option
 @click.argument('filename')
 def build_data(filename, seed, parallel):
