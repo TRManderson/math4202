@@ -9,8 +9,6 @@ except ImportError:
     def tqdm(iterable, *args, **kwargs):
         return iterable
 import logging
-import itertools
-from ..util import tail
 import time
 from operator import itemgetter, attrgetter
 import collections
@@ -25,7 +23,17 @@ def distance_between(loc1, loc2, cache={}):
     return cache[loc1, loc2]
 
 
-class ProblemBase(Generic[ArcType]):
+class Problem(Generic[ArcType]):
+    LOCATION_COUNT = 500
+    MIN_XY = 0
+    MAX_XY = 1000
+    ANNOUNCEMENT_COUNT = 20000
+    FLEXIBILITY = 20
+    MIN_PER_KM = 1.2
+    MAX_TIME = 2000
+    EPSILON = 0.001
+    PRECISION = 4
+
     random = None  # type: Random
     logger = None  # type: logging.Logger
     model = None  # type: Model
@@ -41,66 +49,24 @@ class ProblemBase(Generic[ArcType]):
         self.random = random or Random()
         self.model = Model("Ride-sharing")
         self.logger.info("Initialised " + type(self).__name__)
+        self.locations = []
+        self.constraints = {}
+        self.variables = {}
+        self.rider_announcements = set()
+        self.driver_announcements = set()
+        self.matches = {}
+        self.driver_preferences = collections.defaultdict(list)
+        self.rider_preferences = collections.defaultdict(list)
 
     def _gen_locations(self):
         # Generate a list of random locations to use as the set P
         self.logger.info("Beginning location generation")
-        self.locations = []
-
-    def _build_gurobi_model(self) -> None:
-        """
-        Generate the Gurobi model using the already generated locations,
-        announcements, feasible matches, etc.
-        """
-        self.logger.info("Building Gurobi model")
-        self.constraints = {}
-        self.variables = {}
-
-    def callback(self, model, where):
-        self.logger.getChild('callback').debug("Entering callback")
-
-    def build_model(self) -> None:
-        self._gen_locations()
-        self._gen_announcements()
-        t1 = time.time()
-        self._gen_matches()
-        t2 = time.time()
-        self.logger.info("Generated {} arcs: {}s".format(len(self.matches), t2-t1))
-        t1 = time.time()
-        self._build_gurobi_model()
-        t2 = time.time()
-        self.logger.info("Building gurobi model took {}s".format(t2 - t1))
-
-    def optimize(self):
-        def inner_fn(*args, **kwargs):
-            """
-            Gurobi is mean and doesn't think bound methods are functions
-            """
-            self.callback(*args, **kwargs)
-        self.model.optimize(inner_fn)
-
-
-class Problem(ProblemBase):
-    LOCATION_COUNT = 200
-    MIN_XY = 0
-    MAX_XY = 200
-    ANNOUNCEMENT_COUNT = 2000
-    FLEXIBILITY = 20
-    MIN_PER_KM = 1.2
-    MAX_TIME = 2000
-    EPSILON = 0.001
-    PRECISION = 4
-
-    def _gen_locations(self):
-        super()._gen_locations()
         gen = lambda: round(self.random.uniform(self.MIN_XY, self.MAX_XY), self.PRECISION)
         self.locations = [Location(gen(), gen()) for _ in tqdm(range(self.LOCATION_COUNT), "locations", ncols=100)]
         self.distances_cache = {}
 
     def _gen_announcements(self):
         self.logger.info("Generating announcements")
-        self.rider_announcements = set()
-        self.driver_announcements = set()
         for _ in tqdm(range(self.ANNOUNCEMENT_COUNT), "announcements", ncols=100):
             if self.random.randint(0, 1):
                 ls = self.rider_announcements
@@ -138,9 +104,6 @@ class Problem(ProblemBase):
     def _gen_matches(self):
         # Calculates the cost of each valid match between a rider and a driver
         self.logger.info("Generating valid pairings")
-        self.matches = {}
-        self.driver_preferences = collections.defaultdict(list)
-        self.rider_preferences = collections.defaultdict(list)
         for rider in self.rider_announcements:
             for driver in self.driver_announcements:
                 if rider.depart > driver.arrive:
@@ -171,8 +134,35 @@ class Problem(ProblemBase):
 
                 self._track_savings(rider, driver, d_trip - (pickup + dropoff))
 
+    def load_data(self, filename):
+        with open(filename, 'rb') as f:
+            ds = DataSet.load_data(f)
+        self.locations = ds.locations
+        self.rider_announcements = ds.rider_announcements
+        self.driver_announcements = ds.driver_announcements
+        self.matches = ds.matches
+        self.rider_preferences = ds.rider_preferences
+        self.driver_preferences = ds.driver_preferences
+
+    def save_data(self, filename):
+        ds = DataSet(
+            locations=self.locations,
+            rider_announcements=self.rider_announcements,
+            driver_announcements=self.driver_announcements,
+            matches=self.matches,
+            rider_preferences=self.rider_preferences,
+            driver_preferences=self.driver_preferences,
+        )
+        with open(filename, 'wb+') as f:
+            ds.save_data(f)
+
     def _build_gurobi_model(self):
-        super()._build_gurobi_model()
+        """
+        Generate the Gurobi model using the already generated locations,
+        announcements, feasible matches, etc.
+        """
+        self.logger.info("Building Gurobi model")
+
         riders = collections.defaultdict(list)
         drivers = collections.defaultdict(list)
         self.constraints['stability'] = {}
@@ -198,6 +188,31 @@ class Problem(ProblemBase):
             d_const[driver] = self.model.addConstr(
                 quicksum(vars) <= 1, name="{} once".format(driver)
             )
+
+    def callback(self, model, where):
+        self.logger.getChild('callback').debug("Entering callback")
+
+    def build_data(self):
+        self._gen_locations()
+        self._gen_announcements()
+        t1 = time.time()
+        self._gen_matches()
+        t2 = time.time()
+        self.logger.info("Generated {} arcs: {}s".format(len(self.matches), t2-t1))
+
+    def build_model(self) -> None:
+        t1 = time.time()
+        self._build_gurobi_model()
+        t2 = time.time()
+        self.logger.info("Building gurobi model took {}s".format(t2 - t1))
+
+    def optimize(self):
+        def inner_fn(*args, **kwargs):
+            """
+            Gurobi is mean and doesn't think bound methods are functions
+            """
+            self.callback(*args, **kwargs)
+        self.model.optimize(inner_fn)
 
     def solution_summary(self):
         if self.model.Status == GRB.INFEASIBLE:
@@ -234,7 +249,6 @@ class Problem(ProblemBase):
             if constr.Slack == 0:
                 rider_participated += 1
         self.logger.info("Rider participation: {}/{}\t{}%".format(rider_participated, rider_total, round(rider_participated*100.0/rider_total, 2)))
-
 
         driver_total = len(self.driver_announcements)
         driver_participated = 0
