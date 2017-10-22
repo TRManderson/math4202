@@ -267,8 +267,7 @@ class Problem(Generic[ArcType]):
                     yield p
                     self.logger.debug("Found tie: {} == {}".format(person, p))
             else:
-                break
-        yield from map(itemgetter(1), i)
+                yield p
 
 
     def _stability_constraint_for(self, rider, driver, var):

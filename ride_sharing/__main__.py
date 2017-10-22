@@ -11,7 +11,7 @@ import click
 import time
 
 model_names = {
-    'stability': SimpleStabilityProblem,
+    'simple': SimpleStabilityProblem,
     'lazy': LazyStabilityProblem,
     'epsilon': EpsilonStableProblem,
     'iterative': IterativeConstraintRemovalProblem,
