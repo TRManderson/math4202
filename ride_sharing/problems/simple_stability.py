@@ -2,6 +2,9 @@ from .base import Problem
 
 
 class SimpleStabilityProblem(Problem):
+    """
+    Simple implementation with stability constraints implemented as per the paper
+    """
     def _build_gurobi_model(self):
         super()._build_gurobi_model()
         stab = self.constraints['stability'] = {}

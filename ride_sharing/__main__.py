@@ -1,12 +1,11 @@
 from ride_sharing.problems.base import Problem
-from ride_sharing.problems.lazy_stability import ULazyStabilityProblem, LLazyStabilityProblem
+from ride_sharing.problems.lazy_stability import LazyStabilityProblem
 from ride_sharing.problems.simple_stability import SimpleStabilityProblem
 from ride_sharing.problems.parallel_matching import ParallelMatchingProblem
 from ride_sharing.problems.constraint_epsilon import ConstraintEpsilonProblem
-from ride_sharing.problems.objective_epsilon import ObjectiveEpsilonProblem, DynamicStabilityPricingProblem
+from ride_sharing.problems.objective_epsilon import ObjectiveEpsilonProblem, DynamicStabilityPricingProblem, PaperObjectiveStabilityProblem
 from ride_sharing.util import compose
 from random import Random
-from operator import attrgetter
 import os
 import click
 
@@ -14,18 +13,33 @@ import click
 model_names = {
     'system': Problem,
     'simple': SimpleStabilityProblem,
-    'lazy_u': ULazyStabilityProblem,
-    'lazy_l': LLazyStabilityProblem,
+    'lazy': LazyStabilityProblem,
     'c_epsilon': ConstraintEpsilonProblem,
     'o_epsilon': ObjectiveEpsilonProblem,
+    'paper_objective': PaperObjectiveStabilityProblem,
     'dynamic': DynamicStabilityPricingProblem
 }
+model_descs = {
+    'system': "Solve to system optimal",
+    "simple": "Standard stable solution",
+    "lazy": "Apply stability to unselected arcs lazily",
+    "c_epsilon": "Constraint-based epsilon-stability",
+    "o_epsilon": "Objective-based epsilon-stability",
+    "paper_objective": "The paper's objective-based epsilon-stability",
+    "dynamic": "Objective-dependent constraint pricing"
+}
 
-models_option = click.option('--model', '-m', type=click.Choice(list(model_names.keys())), multiple=True, required=True)
+def gen_help():
+    res = []
+    for name, desc in model_descs.items():
+        res.append("{}: {}".format(name, desc))
+    return "\n".join(res)
+
+models_option = click.option('--model', '-m', type=click.Choice(list(model_names.keys())), multiple=True, required=True, help=gen_help())
 seed_option = click.option('--seed', type=int, default=int.from_bytes(os.urandom(4), byteorder='big'))
 parallel_option = compose(
-    click.option('--parallel', 'parallel', flag_value=True, default=True),
-    click.option('--single-threaded', 'parallel', flag_value=False),
+    click.option('--parallel', 'parallel', flag_value=True, default=True, help="Perform arc generation in parallel (on by default)"),
+    click.option('--single-threaded', 'parallel', flag_value=False, help="Perform arc generation in only one thread"),
 )
 
 

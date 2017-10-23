@@ -4,7 +4,6 @@ import itertools
 
 
 class StabilityPricingProblem(Problem):
-
     def _build_gurobi_model(self):
         self.force_arc = {
             (rider, driver): self.model.addVar(vtype=GRB.BINARY)
@@ -28,6 +27,9 @@ class StabilityPricingProblem(Problem):
 
 
 class ObjectiveEpsilonProblem(StabilityPricingProblem):
+    """
+    Whether or not to use stability constraints is priced into objective
+    """
     STABILITY_EPSILON = 5
 
     def _build_gurobi_model(self):
@@ -38,7 +40,19 @@ class ObjectiveEpsilonProblem(StabilityPricingProblem):
         )
 
 
+class PaperObjectiveStabilityProblem(StabilityPricingProblem):
+    """
+    Objective is to maximise applied stability constraints
+    """
+    def _build_gurobi_model(self):
+        super()._build_gurobi_model()
+        self.model.setObjective(quicksum(self.force_arc.values()), sense=GRB.MAXIMIZE)
+
+
 class DynamicStabilityPricingProblem(StabilityPricingProblem):
+    """
+    Whether or not to use stability constraints is priced into objective and dependent on arc costs
+    """
     STABILITY_EPSILON = 0.1
 
     def _value_stability_var(self, arc, var):

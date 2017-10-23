@@ -3,6 +3,9 @@ from operator import itemgetter
 
 
 class ConstraintEpsilonProblem(Problem):
+    """
+    Stability constraints relaxed to allow any solutions within selected epsilon
+    """
     STABILITY_EPSILON = 5
 
     def _stability_filter(self, savings, person, items):

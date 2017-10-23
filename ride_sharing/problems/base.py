@@ -23,6 +23,9 @@ def distance_between(loc1, loc2, cache={}):
 
 
 class Problem(object):
+    """
+    Base problem: solve the model to a system-optimal solution
+    """
     LOCATION_COUNT = 1000
     MIN_XY = 0
     MAX_XY = 20
