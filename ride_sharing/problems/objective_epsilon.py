@@ -39,12 +39,13 @@ class ObjectiveEpsilonProblem(StabilityPricingProblem):
 
 
 class DynamicStabilityPricingProblem(StabilityPricingProblem):
-    def _value_stability_var(self, arc, val):
-        return self.matches[arc]*val/4
+    STABILITY_EPSILON = 0.1
+
+    def _value_stability_var(self, arc, var):
+        return self.matches[arc]*var * self.STABILITY_EPSILON
 
     def _build_gurobi_model(self):
         super()._build_gurobi_model()
-        obj = self.model.getObjective()
-        self.model.setObjective(obj - quicksum(
+        self.model.setObjective(self.total_savings - quicksum(
             itertools.starmap(self._value_stability_var, self.force_arc.items())
         ), sense=GRB.MAXIMIZE)

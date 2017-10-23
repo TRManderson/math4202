@@ -252,6 +252,8 @@ class Problem(object):
                 self.logger.info("No stability constraints participate in IIS")
             return
 
+        self.logger.info("Total savings: {}".format(self.total_savings.getValue()))
+
         rider_total = len(self.rider_announcements)
         rider_participated = 0
         for rider, constr in self.constraints['rider'].items():

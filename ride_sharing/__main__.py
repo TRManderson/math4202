@@ -6,6 +6,7 @@ from ride_sharing.problems.constraint_epsilon import ConstraintEpsilonProblem
 from ride_sharing.problems.objective_epsilon import ObjectiveEpsilonProblem, DynamicStabilityPricingProblem
 from ride_sharing.util import compose
 from random import Random
+from operator import attrgetter
 import os
 import click
 
@@ -48,7 +49,7 @@ def test(model, seed, parallel):
     base_cls = ParallelMatchingProblem if parallel else Problem
     bases = tuple(model_names[name] for name in model) + (base_cls,)
     cls = type('RuntimeClass', bases, {})
-    print(cls.mro())
+    print([c.__name__ for c in cls.mro()[1:-1]])
     p = cls(r)
     p.build_data()
     p.build_model()
@@ -80,7 +81,7 @@ def from_data(filename, model):
     """
     bases = tuple(model_names[name] for name in model)
     cls = type('RuntimeClass', bases, {})
-    print(cls.mro())
+    print([c.__name__ for c in cls.mro()[1:-1]])
     p = cls()
     p.load_data(filename)
     p.build_model()
