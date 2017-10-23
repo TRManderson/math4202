@@ -265,20 +265,43 @@ class Problem(Generic[ArcType]):
                 driver_participated += 1
         self.logger.info("Driver participation: {}/{}\t{}%".format(driver_participated, driver_total, round(driver_participated*100.0/driver_total, 2)))
 
-        blocking = 0
+        pref = 0
+        r_matched = {}
+        d_matched = {}
         for arc, var in self.variables.items():
             rider, driver = arc
             savings = self.matches[arc]
             if var.X < self.EPSILON:
                 continue
+            r_matched[rider] = driver
+            d_matched[driver] = rider
             if self.rider_preferences[rider][-1][0] > savings:
-                blocking += 1
+                pref += 1
             if self.driver_preferences[driver][-1][0] > savings:
-                blocking += 1
-        self.logger.info("Less-preferred pairs: {}".format(blocking))
+                pref += 1
 
+        block_set = set()
+        tie_set = set()
+        for rider, matched_driver in r_matched.items():
+            matched_savings = self.matches[rider, matched_driver]
+            for d_val, driver in self.rider_preferences[rider]:
+                if d_val < matched_savings:
+                    continue
+                elif d_val == matched_savings:
+                    s = tie_set
+                else:
+                    s = block_set
+                if driver == matched_driver:
+                    continue
+                # driver > matched_driver
+                driver_match = d_matched.get(driver)
+                d_matched_savings = self.matches.get((driver_match, driver))
+                if driver_match is None or d_matched_savings < matched_savings:
+                    s.add((rider, driver))
 
-
+        self.logger.info("Less-preferred matches: {}".format(pref))
+        self.logger.info("Blocking pairs: {}".format(len(block_set)))
+        self.logger.info("Unselected ties: {}".format(len(tie_set)))
 
     def _stability_filter(self, savings, person, items):
         i = iter(items)
@@ -289,7 +312,6 @@ class Problem(Generic[ArcType]):
             elif s == savings:
                 if p != person:
                     yield p
-                    self.logger.debug("Found tie: {} == {}".format(person, p))
             else:
                 yield p
 
