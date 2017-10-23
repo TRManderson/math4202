@@ -48,6 +48,7 @@ def test(model, seed, parallel):
     base_cls = ParallelMatchingProblem if parallel else Problem
     bases = tuple(model_names[name] for name in model) + (base_cls,)
     cls = type('RuntimeClass', bases, {})
+    print(cls.mro())
     p = cls(r)
     p.build_data()
     p.build_model()
@@ -79,6 +80,7 @@ def from_data(filename, model):
     """
     bases = tuple(model_names[name] for name in model)
     cls = type('RuntimeClass', bases, {})
+    print(cls.mro())
     p = cls()
     p.load_data(filename)
     p.build_model()

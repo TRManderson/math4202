@@ -23,7 +23,7 @@ def distance_between(loc1, loc2, cache={}):
     return cache[loc1, loc2]
 
 
-class Problem(Generic[ArcType]):
+class Problem(object):
     LOCATION_COUNT = 200
     MIN_XY = 0
     MAX_XY = 200
@@ -178,6 +178,7 @@ class Problem(Generic[ArcType]):
             riders[rider].append(var)
             drivers[driver].append(var)
 
+        self.total_savings = objective
         self.model.setObjective(objective, sense=GRB.MAXIMIZE)
 
         r_const = self.constraints['rider'] = {}
@@ -299,6 +300,7 @@ class Problem(Generic[ArcType]):
                 if driver_match is None or d_matched_savings < matched_savings:
                     s.add((rider, driver))
 
+        self.logger.info("Matched pairs: {}".format(len(r_matched)))
         self.logger.info("Less-preferred matches: {}".format(pref))
         self.logger.info("Blocking pairs: {}".format(len(block_set)))
         self.logger.info("Unselected ties: {}".format(len(tie_set)))
@@ -309,9 +311,8 @@ class Problem(Generic[ArcType]):
             s, p = next(i)
             if s < savings:
                 continue
-            elif s == savings:
-                if p != person:
-                    yield p
+            elif s == savings and p == person:
+                continue
             else:
                 yield p
 

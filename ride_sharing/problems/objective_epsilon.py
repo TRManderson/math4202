@@ -6,7 +6,10 @@ import itertools
 class StabilityPricingProblem(Problem):
 
     def _build_gurobi_model(self):
-        self.force_arc = {}
+        self.force_arc = {
+            (rider, driver): self.model.addVar(vtype=GRB.BINARY)
+            for (rider, driver) in self.matches
+        }
         super()._build_gurobi_model()
 
     def _stability_constraint_for(self, rider, driver, var):
@@ -21,8 +24,7 @@ class StabilityPricingProblem(Problem):
             for rider_preferred in
             self._stability_filter(match_savings, rider, self.driver_preferences[driver])
         )
-        constr_var = self.force_arc[(rider, driver)] = self.model.addVar(vtype=GRB.BINARY)
-        return rider_pref + driver_pref + var >= constr_var
+        return rider_pref + driver_pref + var >= 1 - self.force_arc[(rider, driver)]
 
 
 class ObjectiveEpsilonProblem(StabilityPricingProblem):
@@ -30,8 +32,10 @@ class ObjectiveEpsilonProblem(StabilityPricingProblem):
 
     def _build_gurobi_model(self):
         super()._build_gurobi_model()
-        obj = self.model.getObjective()
-        self.model.setObjective(obj - self.STABILITY_EPSILON * quicksum(self.force_arc.values()))
+        self.model.setObjective(
+            self.total_savings - self.STABILITY_EPSILON*quicksum(self.force_arc.values()),
+            sense=GRB.MAXIMIZE
+        )
 
 
 class DynamicStabilityPricingProblem(StabilityPricingProblem):
@@ -43,4 +47,4 @@ class DynamicStabilityPricingProblem(StabilityPricingProblem):
         obj = self.model.getObjective()
         self.model.setObjective(obj - quicksum(
             itertools.starmap(self._value_stability_var, self.force_arc.items())
-        ))
+        ), sense=GRB.MAXIMIZE)
