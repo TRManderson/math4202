@@ -85,8 +85,10 @@ def from_data(filename, model):
     p.optimize()
     p.solution_summary()
 
-
-if __name__ == "__main__":
+def main():
     import logging
     logging.basicConfig(level="INFO", format="%(asctime)s | %(message)s")
     cli()
+
+if __name__ == "__main__":
+    main()
