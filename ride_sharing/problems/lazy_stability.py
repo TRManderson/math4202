@@ -2,11 +2,7 @@ from .base import Problem
 from gurobipy import CallbackClass, Model, quicksum
 
 
-class LazyStabilityProblem(Problem):
-    EPSILON = 0.001
-
-
-class ULazyStabilityProblem(LazyStabilityProblem):
+class ULazyStabilityProblem(Problem):
     def _build_gurobi_model(self):
         super()._build_gurobi_model()
         self.model.setParam('LazyConstraints', 1)
@@ -25,7 +21,7 @@ class ULazyStabilityProblem(LazyStabilityProblem):
             model.cbLazy(self._stability_constraint_for(*arc, var))
 
 
-class LLazyStabilityProblem(LazyStabilityProblem):
+class LLazyStabilityProblem(Problem):
     def _build_gurobi_model(self):
         super()._build_gurobi_model()
         self.model.setParam('LazyConstraints', 1)

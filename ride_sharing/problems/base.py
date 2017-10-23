@@ -24,14 +24,15 @@ def distance_between(loc1, loc2, cache={}):
 
 
 class Problem(Generic[ArcType]):
-    LOCATION_COUNT = 500
+    LOCATION_COUNT = 200
     MIN_XY = 0
-    MAX_XY = 1000
+    MAX_XY = 200
     ANNOUNCEMENT_COUNT = 20000
     FLEXIBILITY = 20
     MIN_PER_KM = 1.2
-    MAX_TIME = 2000
+    MAX_TIME = 1000
     PRECISION = 4
+    EPSILON = 0.001
 
     random = None  # type: Random
     logger = None  # type: logging.Logger
@@ -136,6 +137,9 @@ class Problem(Generic[ArcType]):
     def load_data(self, filename):
         with open(filename, 'rb') as f:
             ds = DataSet.load_data(f)
+        self.logger.info("Loaded dataset, {} locations, {} announcements, {} arcs".format(
+            len(ds.locations), len(ds.rider_announcements) + len(ds.driver_announcements), len(ds.matches)
+        ))
         self.locations = ds.locations
         self.rider_announcements = ds.rider_announcements
         self.driver_announcements = ds.driver_announcements
@@ -261,7 +265,20 @@ class Problem(Generic[ArcType]):
                 driver_participated += 1
         self.logger.info("Driver participation: {}/{}\t{}%".format(driver_participated, driver_total, round(driver_participated*100.0/driver_total, 2)))
 
-        self.logger.info
+        blocking = 0
+        for arc, var in self.variables.items():
+            rider, driver = arc
+            savings = self.matches[arc]
+            if var.X < self.EPSILON:
+                continue
+            if self.rider_preferences[rider][-1][0] > savings:
+                blocking += 1
+            if self.driver_preferences[driver][-1][0] > savings:
+                blocking += 1
+        self.logger.info("Less-preferred pairs: {}".format(blocking))
+
+
+
 
     def _stability_filter(self, savings, person, items):
         i = iter(items)
