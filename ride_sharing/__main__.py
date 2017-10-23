@@ -22,7 +22,7 @@ model_names = {
 }
 
 models_option = click.option('--model', '-m', type=click.Choice(list(model_names.keys())), multiple=True, required=True)
-seed_option = click.option('--seed', type=int, default=os.urandom(4))
+seed_option = click.option('--seed', type=int, default=int.from_bytes(os.urandom(4), byteorder='big'))
 parallel_option = compose(
     click.option('--parallel', 'parallel', flag_value=True, default=True),
     click.option('--single-threaded', 'parallel', flag_value=False),

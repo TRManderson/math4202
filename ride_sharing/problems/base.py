@@ -2,7 +2,6 @@ from ..models import *
 from gurobipy import Model, quicksum, GRB, Constr, Var
 from typing import Dict, Optional, Tuple, TypeVar, Type, Generic
 from random import Random
-import heapq as hq
 try:
     from tqdm import tqdm
 except ImportError:
@@ -24,13 +23,13 @@ def distance_between(loc1, loc2, cache={}):
 
 
 class Problem(object):
-    LOCATION_COUNT = 200
+    LOCATION_COUNT = 1000
     MIN_XY = 0
-    MAX_XY = 200
-    ANNOUNCEMENT_COUNT = 20000
+    MAX_XY = 20
+    ANNOUNCEMENT_COUNT = 12000
     FLEXIBILITY = 20
     MIN_PER_KM = 1.2
-    MAX_TIME = 1000
+    MAX_TIME = 300
     PRECISION = 4
     EPSILON = 0.001
 
@@ -98,8 +97,8 @@ class Problem(object):
 
     def _track_savings(self, rider, driver, savings):
         self.matches[(rider, driver)] = savings
-        hq.heappush(self.rider_preferences[rider], (savings, driver))
-        hq.heappush(self.driver_preferences[driver], (savings, rider))
+        self.rider_preferences[rider].append((savings, driver))
+        self.driver_preferences[driver].append((savings, rider))
 
     def _gen_matches(self):
         # Calculates the cost of each valid match between a rider and a driver
