@@ -6,7 +6,7 @@ https://github.com/pypa/sampleproject
 
 # Always prefer setuptools over distutils
 from setuptools import setup, find_packages
-from sys
+import sys
 
 if not (sys.version_info.major == 3 and sys.version_info != 6):
     print("Requires Python 3.6")
