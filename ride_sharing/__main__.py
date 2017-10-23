@@ -2,8 +2,8 @@ from ride_sharing.problems.base import Problem
 from ride_sharing.problems.lazy_stability import LazyStabilityProblem
 from ride_sharing.problems.simple_stability import SimpleStabilityProblem
 from ride_sharing.problems.parallel_matching import ParallelMatchingProblem
-from ride_sharing.problems.epsilon_stability import EpsilonStableProblem
-from ride_sharing.problems.iterative_removal import IterativeConstraintRemovalProblem
+from ride_sharing.problems.constraint_epsilon import ConstraintEpsilonProblem
+from ride_sharing.problems.objective_epsilon import ObjectiveEpsilonProblem, DynamicStabilityPricingProblem
 from ride_sharing.util import compose
 from random import Random
 import os
@@ -13,8 +13,9 @@ import time
 model_names = {
     'simple': SimpleStabilityProblem,
     'lazy': LazyStabilityProblem,
-    'epsilon': EpsilonStableProblem,
-    'iterative': IterativeConstraintRemovalProblem,
+    'c_epsilon': ConstraintEpsilonProblem,
+    'o_epsilon': ObjectiveEpsilonProblem,
+    'dynamic': DynamicStabilityPricingProblem
 }
 
 models_option = click.option('--model', '-m', type=click.Choice(list(model_names.keys())), multiple=True, required=True)

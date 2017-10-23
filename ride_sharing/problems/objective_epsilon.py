@@ -25,8 +25,8 @@ class StabilityPricingProblem(Problem):
         return rider_pref + driver_pref + var >= constr_var
 
 
-class StaticStabilityPricingProblem(StabilityPricingProblem):
-    PRICE_OF_STABILITY = 10
+class ObjectiveEpsilonProblem(StabilityPricingProblem):
+    STABILITY_EPSILON = 5
 
     def _build_gurobi_model(self):
         super()._build_gurobi_model()

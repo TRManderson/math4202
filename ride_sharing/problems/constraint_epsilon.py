@@ -1,8 +1,9 @@
 from .base import Problem
 from operator import itemgetter
 
-class EpsilonStableProblem(Problem):
-    STABILITY_EPSILON = 5
+
+class ConstraintEpsilonProblem(Problem):
+    STABILITY_EPSILON = 10
 
     def _stability_filter(self, savings, person, items):
         i = iter(items)
@@ -10,4 +11,7 @@ class EpsilonStableProblem(Problem):
             s, p = next(i)
             if s < savings + self.STABILITY_EPSILON:
                 continue
-        yield from map(itemgetter(1), i)
+            elif p == person:
+                continue
+            else:
+                yield p

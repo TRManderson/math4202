@@ -37,6 +37,7 @@ def matches_for_rider(rider, driver_announcements, min_per_km):
         result.append((rider, driver, d_trip - (pickup + dropoff)))
     return result
 
+
 class ParallelMatchingProblem(Problem):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

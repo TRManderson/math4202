@@ -205,13 +205,19 @@ class Problem(Generic[ArcType]):
         t2 = time.time()
         self.logger.info("Building gurobi model took {}s".format(t2 - t1))
 
-    def optimize(self):
+    def _optimize(self):
         def inner_fn(*args, **kwargs):
             """
             Gurobi is mean and doesn't think bound methods are functions
             """
             self.callback(*args, **kwargs)
         self.model.optimize(inner_fn)
+
+    def optimize(self):
+        t1 = time.time()
+        self._optimize()
+        t2 = time.time()
+        self.logger.info("Solve took {}s".format(t2 - t1))
 
     def solution_summary(self):
         if self.model.Status == GRB.INFEASIBLE:
@@ -239,7 +245,6 @@ class Problem(Generic[ArcType]):
                     self.logger.info('{} participates in IIS (cost {})'.format(arc, self.matches[arc]))
             if not p:
                 self.logger.info("No stability constraints participate in IIS")
-
             return
 
         rider_total = len(self.rider_announcements)
@@ -256,6 +261,8 @@ class Problem(Generic[ArcType]):
                 driver_participated += 1
         self.logger.info("Driver participation: {}/{}\t{}%".format(driver_participated, driver_total, round(driver_participated*100.0/driver_total, 2)))
 
+        self.logger.info
+
     def _stability_filter(self, savings, person, items):
         i = iter(items)
         while True:
@@ -268,7 +275,6 @@ class Problem(Generic[ArcType]):
                     self.logger.debug("Found tie: {} == {}".format(person, p))
             else:
                 yield p
-
 
     def _stability_constraint_for(self, rider, driver, var):
         match_savings = self.matches[(rider, driver)]
