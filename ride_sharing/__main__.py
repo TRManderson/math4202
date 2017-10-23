@@ -1,5 +1,5 @@
 from ride_sharing.problems.base import Problem
-from ride_sharing.problems.lazy_stability import LazyStabilityProblem
+from ride_sharing.problems.lazy_stability import ULazyStabilityProblem, LLazyStabilityProblem
 from ride_sharing.problems.simple_stability import SimpleStabilityProblem
 from ride_sharing.problems.parallel_matching import ParallelMatchingProblem
 from ride_sharing.problems.constraint_epsilon import ConstraintEpsilonProblem
@@ -8,11 +8,12 @@ from ride_sharing.util import compose
 from random import Random
 import os
 import click
-import time
+
 
 model_names = {
     'simple': SimpleStabilityProblem,
-    'lazy': LazyStabilityProblem,
+    'lazy_u': ULazyStabilityProblem,
+    'lazy_l': LLazyStabilityProblem,
     'c_epsilon': ConstraintEpsilonProblem,
     'o_epsilon': ObjectiveEpsilonProblem,
     'dynamic': DynamicStabilityPricingProblem

@@ -31,10 +31,10 @@ class ObjectiveEpsilonProblem(StabilityPricingProblem):
     def _build_gurobi_model(self):
         super()._build_gurobi_model()
         obj = self.model.getObjective()
-        self.model.setObjective(obj - self.PRICE_OF_STABILITY * quicksum(self.force_arc.values()))
+        self.model.setObjective(obj - self.STABILITY_EPSILON * quicksum(self.force_arc.values()))
 
 
-class DynamicStabilityPricingProblem(Problem):
+class DynamicStabilityPricingProblem(StabilityPricingProblem):
     def _value_stability_var(self, arc, val):
         return self.matches[arc]*val/4
 
