@@ -1,9 +1,7 @@
 from .base import Problem, distance_between
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial
-import collections
 from multiprocessing import cpu_count
-import itertools
 _parallel_distance_cache = {}
 
 

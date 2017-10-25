@@ -10,6 +10,7 @@ class StabilityPricingProblem(Problem):
             for (rider, driver) in self.matches
         }
         super()._build_gurobi_model()
+        self.logger.info("Solving with stability epsilon of {}".format(self.STABILITY_EPSILON))
 
     def _stability_constraint_for(self, rider, driver, var):
         match_savings = self.matches[(rider, driver)]
@@ -44,9 +45,11 @@ class PaperObjectiveStabilityProblem(StabilityPricingProblem):
     """
     Objective is to maximise applied stability constraints
     """
+    STABILITY_EPSILON = None
+
     def _build_gurobi_model(self):
         super()._build_gurobi_model()
-        self.model.setObjective(quicksum(self.force_arc.values()), sense=GRB.MAXIMIZE)
+        self.model.setObjective(quicksum(self.force_arc.values()), sense=GRB.MINIMIZE)
 
 
 class DynamicStabilityPricingProblem(StabilityPricingProblem):

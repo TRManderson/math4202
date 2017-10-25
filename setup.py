@@ -8,8 +8,8 @@ https://github.com/pypa/sampleproject
 from setuptools import setup, find_packages
 import sys
 
-if not (sys.version_info.major == 3 and sys.version_info != 6):
-    print("Requires Python 3.6")
+if not (sys.version_info.major == 3 and sys.version_info < 5):
+    print("Requires Python 3.5 or 3.6")
     exit(1)
 
 setup(
@@ -20,6 +20,7 @@ setup(
     author='Tom Manderson, Iain Rudge',
     author_email='me@trm.io, rudgeiain@gmail.com',
     classifiers=[
+        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
     ],
     packages=find_packages(),

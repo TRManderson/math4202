@@ -17,7 +17,7 @@ model_names = {
     'c_epsilon': ConstraintEpsilonProblem,
     'o_epsilon': ObjectiveEpsilonProblem,
     'paper_objective': PaperObjectiveStabilityProblem,
-    'dynamic': DynamicStabilityPricingProblem
+    'value': DynamicStabilityPricingProblem
 }
 model_descs = {
     'system': "Solve to system optimal",
@@ -25,8 +25,8 @@ model_descs = {
     "lazy": "Apply stability to unselected arcs lazily",
     "c_epsilon": "Constraint-based epsilon-stability",
     "o_epsilon": "Objective-based epsilon-stability",
-    "paper_objective": "The paper's objective-based epsilon-stability",
-    "dynamic": "Objective-dependent constraint pricing"
+    "paper_objective": "The paper's objective-based stability",
+    "value": "Value-dependent constraint pricing"
 }
 
 def gen_help():

@@ -9,6 +9,7 @@ except ImportError:
         return iterable
 import logging
 import time
+import itertools
 from operator import itemgetter, attrgetter
 import collections
 
@@ -26,11 +27,10 @@ class Problem(object):
     """
     Base problem: solve the model to a system-optimal solution
     """
-    LOCATION_COUNT = 1000
-    MIN_XY = 0
+    LOCATION_COUNT = 500
     MAX_XY = 20
-    ANNOUNCEMENT_COUNT = 12000
-    FLEXIBILITY = 20
+    ANNOUNCEMENT_COUNT = 1000
+    FLEXIBILITY = 200
     MIN_PER_KM = 1.2
     MAX_TIME = 300
     PRECISION = 4
@@ -63,7 +63,7 @@ class Problem(object):
     def _gen_locations(self):
         # Generate a list of random locations to use as the set P
         self.logger.info("Beginning location generation")
-        gen = lambda: round(self.random.uniform(self.MIN_XY, self.MAX_XY), self.PRECISION)
+        gen = lambda: round(self.random.uniform(0, self.MAX_XY), self.PRECISION)
         self.locations = [Location(gen(), gen()) for _ in tqdm(range(self.LOCATION_COUNT), "locations", ncols=100)]
         self.distances_cache = {}
 
@@ -141,6 +141,10 @@ class Problem(object):
             ds = DataSet.load_data(f)
         self.logger.info("Loaded dataset, {} locations, {} announcements, {} arcs".format(
             len(ds.locations), len(ds.rider_announcements) + len(ds.driver_announcements), len(ds.matches)
+        ))
+        self.logger.info("Max time {},  Max XY {}".format(
+            max(a.arrive for a in itertools.chain(ds.rider_announcements, ds.driver_announcements)),
+            max(max((l.x, l.y)) for l in ds.locations)
         ))
         self.locations = ds.locations
         self.rider_announcements = ds.rider_announcements
